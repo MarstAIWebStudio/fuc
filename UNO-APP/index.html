@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>S-RANK UNO</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0f172a">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Montserrat:wght@900&family=Noto+Sans+KR:wght@400;700&display=swap');
+        :root { --uno-red: #ff3b30; --uno-blue: #007aff; --uno-yellow: #ffcc00; }
+        body { font-family: 'Noto Sans KR', sans-serif; background: #0f172a; color: #f8fafc; -webkit-tap-highlight-color: transparent; }
+        .uno-font { font-family: 'Black Han Sans', sans-serif; }
+        .eng-font { font-family: 'Montserrat', sans-serif; }
+        .glass-card { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(15px); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 1.5rem; }
+        .uno-gradient-red { background: linear-gradient(135deg, #ff3b30 0%, #af1d1d 100%); }
+        .uno-gradient-blue { background: linear-gradient(135deg, #007aff 0%, #004a99 100%); }
+        .nav-item-active { color: var(--uno-yellow); transform: translateY(-2px); }
+        .s-logo { width: 45px; height: 45px; background: var(--uno-red); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-family: 'Montserrat', sans-serif; font-weight: 900; font-size: 24px; color: white; box-shadow: 0 4px 15px rgba(255, 59, 48, 0.4); }
+        #install-banner { display: none; }
+    </style>
+</head>
+<body class="pb-28">
+    <!-- 설치 유도 상단 바[cite: 1] -->
+    <div id="install-banner" class="sticky top-0 left-0 right-0 p-3 bg-red-600 z-[100] flex justify-between items-center shadow-lg">
+        <span class="font-bold text-xs">앱으로 설치해서 더 편하게 즐기세요!</span>
+        <button id="install-button" class="bg-white text-red-600 px-3 py-1 rounded-lg font-black text-xs">설치</button>
+    </div>
+
+    <header class="p-6 flex justify-between items-center sticky top-0 z-50 bg-[#0f172a]/80 backdrop-blur-md">
+        <div class="flex items-center gap-3">
+            <div class="s-logo">S</div>
+            <div>
+                <h1 class="uno-font text-xl leading-none">S-RANK</h1>
+                <p class="text-[9px] eng-font text-slate-500 tracking-[0.2em]">ULTIMATE UNO SYSTEM</p>
+            </div>
+        </div>
+        <button onclick="openAddModal()" class="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center border border-white/10">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
+        </button>
+    </header>
+
+    <main class="px-6 max-w-md mx-auto">
+        <!-- 홈 페이지: 리더보드 -->
+        <section id="page-home">
+            <h2 class="uno-font text-2xl mb-4 text-yellow-500">LEADERBOARD</h2>
+            <div id="leaderboard" class="space-y-3 text-white"></div>
+        </section>
+
+        <!-- 게임 페이지 -->
+        <section id="page-game" class="hidden">
+            <div id="game-step-1">
+                <h2 class="uno-font text-2xl mb-6">PLAYER SELECT</h2>
+                <div id="player-grid" class="grid grid-cols-2 gap-3 mb-8"></div>
+                <button onclick="startMatch()" id="start-btn" class="w-full py-5 rounded-2xl uno-gradient-blue uno-font text-xl shadow-xl disabled:opacity-20" disabled>START MATCH</button>
+            </div>
+            <div id="game-step-2" class="hidden">
+                <div id="ranking-list" class="space-y-4 mb-8"></div>
+                <button onclick="submitGame()" class="w-full py-5 rounded-2xl uno-gradient-red uno-font text-xl">SAVE RECORD</button>
+            </div>
+        </section>
+
+        <!-- 히스토리 페이지 -->
+        <section id="page-history" class="hidden">
+            <h2 class="uno-font text-2xl mb-6">MATCH LOGS</h2>
+            <div id="match-history" class="space-y-3"></div>
+        </section>
+    </main>
+
+    <!-- 네비게이션 바 -->
+    <nav class="fixed bottom-6 left-6 right-6 h-16 glass-card border-white/10 flex items-center justify-around z-50">
+        <button onclick="showPage('home')" id="nav-home" class="flex flex-col items-center gap-1 nav-item-active">
+            <span class="text-[10px] font-bold eng-font">RANK</span>
+        </button>
+        <button onclick="showPage('game')" id="nav-game" class="flex flex-col items-center gap-1 text-slate-500">
+            <span class="text-[10px] font-bold eng-font">MATCH</span>
+        </button>
+        <button onclick="showPage('history')" id="nav-history" class="flex flex-col items-center gap-1 text-slate-500">
+            <span class="text-[10px] font-bold eng-font">LOGS</span>
+        </button>
+    </nav>
+
+    <!-- 플레이어 추가 모달 -->
+    <div id="add-modal" class="hidden fixed inset-0 bg-black/90 z-[60] flex items-center justify-center p-8 backdrop-blur-xl">
+        <div class="w-full max-w-sm glass-card p-8 border-white/20">
+            <h2 class="uno-font text-3xl mb-2 text-yellow-500">NEW PLAYER</h2>
+            <input type="text" id="new-player-name" placeholder="이름 입력" class="w-full p-5 bg-white/5 rounded-2xl border border-white/10 outline-none text-white font-bold mb-6">
+            <div class="flex gap-3">
+                <button onclick="closeAddModal()" class="flex-1 py-4 text-slate-400 font-bold">CANCEL</button>
+                <button onclick="addPlayer()" class="flex-1 py-4 uno-gradient-red text-white uno-font rounded-2xl">ADD</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        // PWA 설치 로직[cite: 1]
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            document.getElementById('install-banner').style.display = 'flex';
+        });
+
+        document.getElementById('install-button').addEventListener('click', async () => {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                if (outcome === 'accepted') document.getElementById('install-banner').style.display = 'none';
+                deferredPrompt = null;
+            }
+        });
+
+        // 서비스 워커 등록[cite: 1]
+        if ('serviceWorker' in navigator) {
+        // 경로 앞에 마침표(.)를 붙여 현재 폴더 기준임을 명시합니다.
+         navigator.serviceWorker.register('./sw.js', { scope: './' })
+        .then(() => console.log("Service Worker Registered"))
+        .catch(err => console.error("SW Registration Failed", err));
+        }
+
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getDatabase, ref, onValue, set, push, runTransaction } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBwSpbb46Bh9-jMjlVkZt2XQL4EWHLVm60",
+            databaseURL: "https://uno-game-f3a2b-default-rtdb.asia-southeast1.firebasedatabase.app/",
+            projectId: "uno-game-f3a2b",
+            appId: "1:569511174790:web:a401615a633cc805dea707"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        let allUsers = [];
+        let selectedPlayers = [];
+
+        // 화면 전환 로직
+        window.showPage = (page) => {
+            ['home', 'game', 'history'].forEach(p => {
+                document.getElementById(`page-${p}`).classList.toggle('hidden', p !== page);
+                document.getElementById(`nav-${p}`).classList.toggle('nav-item-active', p === page);
+                document.getElementById(`nav-${p}`).classList.toggle('text-slate-500', p !== page);
+            });
+            if (page === 'game') {
+                selectedPlayers = [];
+                renderPlayerSelection();
+                document.getElementById('game-step-1').classList.remove('hidden');
+                document.getElementById('game-step-2').classList.add('hidden');
+            }
+        };
+
+        // 데이터 실시간 로드
+        onValue(ref(db, 'users'), (snapshot) => {
+            const data = snapshot.val();
+            allUsers = data ? Object.keys(data).map(key => ({ id: key, ...data[key] })) : [];
+            allUsers.sort((a, b) => (b.points || 0) - (a.points || 0));
+            renderLeaderboard();
+        });
+
+        function renderLeaderboard() {
+            const container = document.getElementById('leaderboard');
+            container.innerHTML = allUsers.map((user, i) => `
+                <div class="glass-card p-5 flex items-center justify-between">
+                    <div class="flex items-center gap-4">
+                        <span class="eng-font text-xl text-yellow-500">${i + 1}</span>
+                        <div><p class="font-black text-lg">${user.name}</p></div>
+                    </div>
+                    <div class="text-right"><p class="uno-font text-2xl text-yellow-500">${user.points || 0} PTS</p></div>
+                </div>`).join('');
+        }
+
+        window.renderPlayerSelection = () => {
+            const grid = document.getElementById('player-grid');
+            grid.innerHTML = allUsers.map(user => {
+                const isSelected = selectedPlayers.some(p => p.id === user.id);
+                return `<button onclick="togglePlayer('${user.id}')" class="p-4 rounded-2xl font-black border-2 ${isSelected ? 'uno-gradient-red text-white' : 'bg-white/5 text-slate-500'}">${user.name}</button>`;
+            }).join('');
+            document.getElementById('start-btn').disabled = selectedPlayers.length < 2;
+        };
+
+        window.togglePlayer = (id) => {
+            const idx = selectedPlayers.findIndex(p => p.id === id);
+            if (idx > -1) selectedPlayers.splice(idx, 1);
+            else selectedPlayers.push({ id, rank: 1 });
+            renderPlayerSelection();
+        };
+
+        window.startMatch = () => {
+            document.getElementById('game-step-1').classList.add('hidden');
+            document.getElementById('game-step-2').classList.remove('hidden');
+            renderRankingInputs();
+        };
+
+        function renderRankingInputs() {
+            const list = document.getElementById('ranking-list');
+            list.innerHTML = selectedPlayers.map(p => {
+                const user = allUsers.find(u => u.id === p.id);
+                return `<div class="glass-card p-5"><p class="text-xs font-black text-yellow-500 mb-3">${user.name}</p><div class="flex gap-2">${selectedPlayers.map((_, i) => `<button onclick="setRank('${p.id}', ${i+1})" class="flex-1 py-3 rounded-xl font-bold ${p.rank === i+1 ? 'uno-gradient-blue text-white' : 'bg-white/5'}">${i+1}위</button>`).join('')}</div></div>`;
+            }).join('');
+        }
+
+        window.setRank = (id, r) => {
+            const p = selectedPlayers.find(p => p.id === id);
+            if (p) { p.rank = r; renderRankingInputs(); }
+        };
+
+        window.submitGame = async () => {
+            if (!confirm("저장할까요?")) return;
+            for (const p of selectedPlayers) {
+                const earned = selectedPlayers.length - (p.rank - 1);
+                await runTransaction(ref(db, `users/${p.id}`), (u) => {
+                    if (u) { u.points = (u.points || 0) + earned; u.matchCount = (u.matchCount || 0) + 1; }
+                    return u;
+                });
+            }
+            alert("완료!"); showPage('home');
+        };
+
+        window.addPlayer = () => {
+            const name = document.getElementById('new-player-name').value.trim();
+            if (name) { push(ref(db, 'users'), { name, points: 0, matchCount: 0 }); closeAddModal(); }
+        };
+
+        window.openAddModal = () => document.getElementById('add-modal').classList.remove('hidden');
+        window.closeAddModal = () => document.getElementById('add-modal').classList.add('hidden');
+    </script>
+</body>
+</html>
